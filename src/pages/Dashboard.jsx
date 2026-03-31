@@ -1,9 +1,7 @@
-import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
-import { LogOut, User, Shield, Mail, Calendar, KeyRound, Loader2, CheckCircle } from 'lucide-react';
+import { LogOut, User, Shield, Mail, Calendar, Zap } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.jsx';
-import api from '../utils/api.js';
 
 const Stat = ({ icon: Icon, label, value }) => (
   <div style={{
@@ -13,7 +11,7 @@ const Stat = ({ icon: Icon, label, value }) => (
     padding: '1.1rem 1.25rem',
     display: 'flex', alignItems: 'center', gap: '0.875rem',
     backdropFilter: 'blur(12px)',
-    minWidth: 0,
+    minWidth: 0, /* prevent overflow */
   }}>
     <div style={{
       width: 40, height: 40, borderRadius: '0.75rem', flexShrink: 0,
@@ -33,26 +31,11 @@ const Stat = ({ icon: Icon, label, value }) => (
 export default function Dashboard() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
-  const [resetting, setResetting] = useState(false);
-  const [resetSent, setResetSent] = useState(false);
 
   const handleLogout = () => {
     logout();
     toast.success('Signed out successfully');
     navigate('/login');
-  };
-
-  const handleResetPassword = async () => {
-    setResetting(true);
-    try {
-      await api.post('/auth/forgot-password', { email: user.email });
-      setResetSent(true);
-      toast.success('Reset link sent to your email!');
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to send reset email');
-    } finally {
-      setResetting(false);
-    }
   };
 
   const joined = user?.id
@@ -133,95 +116,30 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Stats grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.875rem', marginBottom: '1.5rem' }}>
+        {/* Stats grid — 2 cols on mobile, 4 on desktop */}
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(2, 1fr)',
+          gap: '0.875rem',
+          marginBottom: '1.5rem',
+        }}>
           <Stat icon={User}     label="Full name"    value={user?.name} />
           <Stat icon={Mail}     label="Email"        value={user?.email} />
           <Stat icon={Calendar} label="Member since" value={joined} />
           <Stat icon={Shield}   label="Auth status"  value="Verified ✓" />
         </div>
 
-        {/* Reset password card */}
-        <div style={{
-          background: 'rgba(255,255,255,0.07)',
-          border: '1px solid rgba(255,255,255,0.15)',
-          borderRadius: '1.25rem',
-          padding: '1.5rem',
-          backdropFilter: 'blur(16px)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: '1.5rem',
-          flexWrap: 'wrap',
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', minWidth: 0 }}>
-            <div style={{
-              width: 44, height: 44, borderRadius: '0.875rem', flexShrink: 0,
-              background: 'linear-gradient(135deg, rgba(255,107,122,0.3), rgba(255,176,133,0.3))',
-              border: '1px solid rgba(255,107,122,0.4)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-            }}>
-              <KeyRound size={18} color="#FFB085" />
-            </div>
-            <div style={{ minWidth: 0 }}>
-              <h3 style={{ fontFamily: 'var(--font-display)', fontWeight: 600, color: 'white', margin: '0 0 0.2rem', fontSize: '0.9375rem' }}>
-                Reset password
-              </h3>
-              <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: '0.825rem', margin: 0 }}>
-                {resetSent
-                  ? `Reset link sent to ${user?.email}`
-                  : 'Send a reset link to your email address'}
-              </p>
-            </div>
+        {/* Info card */}
+        <div style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '1.25rem', padding: '1.25rem 1.5rem', display: 'flex', alignItems: 'flex-start', gap: '1rem', backdropFilter: 'blur(16px)' }}>
+          <Zap size={17} color="#FFB085" style={{ flexShrink: 0, marginTop: 2 }} />
+          <div>
+            <h3 style={{ fontFamily: 'var(--font-display)', fontWeight: 600, color: 'white', margin: '0 0 0.3rem', fontSize: '0.9375rem' }}>Password reset flow is active</h3>
+            <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.85rem', lineHeight: 1.6, margin: 0 }}>
+              Sign out and click "Forgot password?" on the login page to test the full email reset flow.
+            </p>
           </div>
-
-          {/* Button — changes to success state after sending */}
-          {resetSent ? (
-            <div style={{
-              display: 'flex', alignItems: 'center', gap: '0.5rem',
-              background: 'rgba(34,197,94,0.15)',
-              border: '1px solid rgba(34,197,94,0.35)',
-              borderRadius: '0.75rem',
-              padding: '0.6rem 1.1rem',
-              flexShrink: 0,
-            }}>
-              <CheckCircle size={15} color="#22c55e" />
-              <span style={{ color: '#22c55e', fontSize: '0.85rem', fontFamily: 'var(--font-display)', fontWeight: 600 }}>
-                Email sent!
-              </span>
-            </div>
-          ) : (
-            <button
-              onClick={handleResetPassword}
-              disabled={resetting}
-              style={{
-                display: 'flex', alignItems: 'center', gap: '0.5rem',
-                background: 'linear-gradient(135deg, rgba(255,107,122,0.25), rgba(255,176,133,0.2))',
-                border: '1px solid rgba(255,107,122,0.45)',
-                borderRadius: '0.75rem',
-                padding: '0.6rem 1.25rem',
-                color: '#FFB085',
-                fontFamily: 'var(--font-display)',
-                fontWeight: 600,
-                fontSize: '0.875rem',
-                cursor: resetting ? 'not-allowed' : 'pointer',
-                opacity: resetting ? 0.6 : 1,
-                transition: 'all 0.2s',
-                flexShrink: 0,
-                whiteSpace: 'nowrap',
-              }}
-              onMouseEnter={e => { if (!resetting) e.currentTarget.style.background = 'linear-gradient(135deg, rgba(255,107,122,0.4), rgba(255,176,133,0.35))'; }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'linear-gradient(135deg, rgba(255,107,122,0.25), rgba(255,176,133,0.2))'; }}
-            >
-              {resetting
-                ? <><Loader2 size={14} style={{ animation: 'spin 0.75s linear infinite' }} /> Sending...</>
-                : <><KeyRound size={14} /> Send reset link</>
-              }
-            </button>
-          )}
         </div>
       </main>
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
 }
